@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Botanalist</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --bg:#0b1220; --card:#0f1729; --card-soft:#f4f6fb; --line:#1b2740;
+    --text:#e8edf6; --muted:#8b97ad; --ink:#0b1220;
+    --accent-a:#3fae7e; --accent-b:#3a6df0;
+    --win:#3fae7e; --loss:#d6534b;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--text);
+    padding:16px 14px 40px; max-width:520px; margin:0 auto;
+  }
+  .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.5px}
+  .sub{color:var(--muted);font-size:14px;margin-top:2px}
+  .lang{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .lang button{background:none;border:none;color:var(--muted);padding:8px 14px;font-weight:700;font-size:13px}
+  .lang button.on{background:#fff;color:var(--ink)}
+
+  .datebar{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+  .arrow{width:46px;height:46px;flex:none;background:var(--card);border:1px solid var(--line);border-radius:14px;color:var(--text);font-size:18px}
+  .dateinput{flex:1;height:46px;background:var(--card);border:1px solid var(--line);border-radius:14px;color:var(--text);text-align:center;font-weight:700;font-size:16px}
+  .chips{display:flex;gap:8px;margin-bottom:18px}
+  .chip{flex:none;padding:9px 18px;border-radius:20px;background:var(--card);border:1px solid var(--line);color:var(--muted);font-weight:700;font-size:14px}
+  .chip.on{background:#fff;color:var(--ink)}
+
+  .tabs{display:flex;gap:10px;margin-bottom:14px}
+  .tab{flex:1;padding:14px;border-radius:14px;background:var(--card);border:1px solid var(--line);color:var(--muted);font-weight:800;font-size:15px;text-align:center}
+  .tab.on{background:#fff;color:var(--ink)}
+
+  select{width:100%;height:48px;background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--text);padding:0 14px;font-weight:700;font-size:15px;margin-bottom:18px;appearance:none}
+
+  .league{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+  .league-h{padding:18px 18px 14px;border-bottom:1px solid var(--line)}
+  .league-h b{font-size:19px}
+  .league-h span{color:var(--muted);font-size:14px;margin-left:6px}
+
+  .match{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .match:last-child{border-bottom:none}
+  .team{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+  .team.away{flex-direction:row-reverse;text-align:right}
+  .team img{width:42px;height:42px;border-radius:50%;object-fit:cover;flex:none;background:#fff}
+  .team b{font-size:17px;font-weight:700;color:#c8d2e4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mid{flex:none;text-align:center;width:78px}
+  .mid .t{font-weight:800;font-size:18px}
+  .mid .s{display:inline-block;margin-top:4px;padding:3px 12px;border-radius:10px;background:#16223c;color:var(--muted);font-size:12px;font-weight:700}
+
+  /* Detalle */
+  .detail .head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .back{width:44px;height:44px;flex:none;background:var(--card);border:1px solid var(--line);border-radius:14px;color:var(--text);font-size:18px}
+  .matchcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:14px}
+  .matchcard h2{font-size:26px;font-weight:800}
+  .matchcard .meta{color:var(--muted);font-size:14px;margin-top:6px;line-height:1.5}
+  .subtabs{display:flex;gap:8px;overflow-x:auto;padding:14px 0 2px}
+  .subtab{flex:none;padding:10px 16px;border-radius:12px;background:#16223c;color:var(--muted);font-weight:700;font-size:14px;border:none}
+  .subtab.on{background:#fff;color:var(--ink)}
+
+  .vs{background:#fff;color:var(--ink);border-radius:var(--radius);padding:22px;margin-bottom:14px}
+  .vs .teams{display:flex;justify-content:space-around;align-items:center}
+  .vs .teams img{width:60px;height:60px;border-radius:8px}
+  .vs .teams b{display:block;margin-top:10px;font-size:17px}
+  .vs .vstxt{color:#6b7687;font-weight:800}
+  .form{display:flex;justify-content:space-around;margin-top:16px}
+  .form .row{display:flex;gap:6px}
+  .form .b{width:30px;height:30px;border-radius:8px;color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .form .W{background:var(--win)} .form .L{background:var(--loss)} .form .D{background:#9aa3b2}
+  .vs .note{text-align:center;color:#6b7687;font-size:13px;margin-top:16px;line-height:1.5}
+
+  .grid{background:#fff;border-radius:var(--radius);padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .stat{background:#f4f6fb;border-radius:14px;padding:18px}
+  .stat .v{color:var(--ink);font-weight:800;font-size:19px}
+  .stat .l{color:#6b7687;font-size:13px;margin-top:6px}
+  .locked{position:relative;filter:blur(5px);pointer-events:none;user-select:none}
+
+  .cta{width:100%;padding:18px;border:none;border-radius:16px;font-weight:800;font-size:16px;color:#fff;background:linear-gradient(90deg,var(--accent-a),var(--accent-b))}
+  .cta.dark{background:linear-gradient(180deg,#d3d7df,#aeb4c0);color:#0b1220}
+
+  /* Chat analisis */
+  .chatbox{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:16px}
+  .chatbox h3{font-size:16px;margin-bottom:12px}
+  .msgs{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;max-height:280px;overflow-y:auto}
+  .msg{padding:12px 14px;border-radius:14px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+  .msg.user{background:#16223c;align-self:flex-end;max-width:85%}
+  .msg.bot{background:#0a2a1e;border:1px solid #163d2c;align-self:flex-start;max-width:92%}
+  .chatin{display:flex;gap:8px}
+  .chatin input{flex:1;height:46px;background:#0a1120;border:1px solid var(--line);border-radius:12px;color:var(--text);padding:0 14px;font-size:15px}
+  .chatin button{flex:none;padding:0 18px;border:none;border-radius:12px;background:linear-gradient(90deg,var(--accent-a),var(--accent-b));color:#fff;font-weight:800}
+
+  /* Modal pago */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;padding:14px;z-index:50}
+  .overlay.on{display:flex}
+  .sheet{background:var(--bg);border:1px solid var(--line);border-radius:22px;padding:22px;width:100%;max-width:480px}
+  .sheet .x{float:right;width:40px;height:40px;border:none;border-radius:50%;background:#16223c;color:#fff;font-size:18px}
+  .sheet h2{font-size:26px;font-weight:800;line-height:1.15}
+  .sheet .lead{color:var(--muted);font-size:14px;margin:10px 0 20px;line-height:1.5}
+  .plan{background:#f4f6fb;color:var(--ink);border-radius:18px;padding:20px;margin-bottom:14px}
+  .plan.hl{border:2px solid var(--accent-a)}
+  .plan h3{font-size:22px;font-weight:800;margin-bottom:12px}
+  .plan ul{list-style:none;margin-bottom:16px}
+  .plan li{padding:4px 0 4px 18px;position:relative;font-weight:600}
+  .plan li::before{content:"•";position:absolute;left:0;color:#6b7687}
+
+  .empty{text-align:center;color:var(--muted);padding:40px 0}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+
+<!-- VISTA LISTA -->
+<div id="view-list">
+  <div class="top">
+    <div>
+      <h1>Partidos</h1>
+      <div class="sub" id="dateSub">cargando…</div>
+    </div>
+    <div class="lang">
+      <button class="on">ES</button><button>EN</button>
+    </div>
+  </div>
+
+  <div class="datebar">
+    <button class="arrow" onclick="shiftDay(-1)">‹</button>
+    <input class="dateinput" type="date" id="dateInput" onchange="onDateChange()">
+    <button class="arrow" onclick="shiftDay(1)">›</button>
+  </div>
+  <div class="chips">
+    <button class="chip" onclick="quickDay(-1)">Ayer</button>
+    <button class="chip on" onclick="quickDay(0)">Hoy</button>
+    <button class="chip" onclick="quickDay(1)">Mañana</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on">Partidos</div>
+    <div class="tab">TOP 3</div>
+  </div>
+
+  <select id="leagueFilter" onchange="renderLeagues()">
+    <option value="">Todas las ligas</option>
+  </select>
+
+  <div id="leaguesWrap"></div>
+</div>
+
+<!-- VISTA DETALLE -->
+<div id="view-detail" class="detail hidden">
+  <div class="head">
+    <button class="back" onclick="showList()">‹</button>
+    <div><b style="font-size:20px">Análisis del partido</b></div>
+  </div>
+  <div id="detailContent"></div>
+</div>
+
+<!-- MODAL PAGO -->
+<div class="overlay" id="payModal">
+  <div class="sheet">
+    <button class="x" onclick="closePay()">✕</button>
+    <h2>Desbloquea todas las funciones premium</h2>
+    <p class="lead">Compra la suscripción de 30 días y abre TOP 3, goles, córners, tarjetas y análisis avanzado.</p>
+    <div class="plan hl">
+      <h3>Suscripción de 30 días</h3>
+      <ul><li>TOP 3 premium</li><li>Goles, córners y tarjetas</li><li>Análisis avanzado</li></ul>
+      <button class="cta" onclick="pay('subscription')">Comprar suscripción</button>
+    </div>
+    <div class="plan">
+      <h3>Primer depósito</h3>
+      <ul><li>TOP 3 premium</li><li>Goles, córners y tarjetas</li><li>Análisis avanzado</li></ul>
+      <button class="cta" onclick="pay('deposit')">Depositar ahora</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const INIT = tg?.initData || "";
+
+let state = { date: new Date(), data: null, premium: false, match: null };
+
+function api(path, opts={}) {
+  return fetch(path, {
+    ...opts,
+    headers: { "Content-Type":"application/json", "X-Init-Data": INIT, ...(opts.headers||{}) }
+  }).then(r => { if(!r.ok) throw r; return r.json(); });
+}
+
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+function fmtNice(d){
+  return d.toLocaleDateString("es-ES",{weekday:"short",day:"2-digit",month:"short"});
+}
+
+async function init(){
+  try { const me = await api("/api/me"); state.premium = me.premium; } catch(e){}
+  document.getElementById("dateInput").value = fmtDate(state.date);
+  await loadMatches();
+}
+
+async function loadMatches(){
+  document.getElementById("dateSub").textContent = fmtNice(state.date);
+  document.getElementById("leaguesWrap").innerHTML =
+    '<div class="empty">Cargando partidos…</div>';
+  try {
+    state.data = await api(`/api/matches?date=${fmtDate(state.date)}`);
+    fillLeagueFilter();
+    renderLeagues();
+  } catch(e){
+    document.getElementById("leaguesWrap").innerHTML =
+      '<div class="empty">No se pudieron cargar los partidos.</div>';
+  }
+}
+
+function fillLeagueFilter(){
+  const sel = document.getElementById("leagueFilter");
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todas las ligas</option>' +
+    state.data.all_leagues.map(l=>`<option value="${l}">${l}</option>`).join("");
+  sel.value = cur;
+}
+
+function renderLeagues(){
+  const filter = document.getElementById("leagueFilter").value;
+  const wrap = document.getElementById("leaguesWrap");
+  const leagues = state.data.leagues.filter(l => !filter || l.league===filter);
+  if (!leagues.length){ wrap.innerHTML='<div class="empty">Sin partidos.</div>'; return; }
+  wrap.innerHTML = leagues.map(l => `
+    <div class="league">
+      <div class="league-h"><b>${l.league}</b><span>${l.country} · ${l.matches.length}</span></div>
+      ${l.matches.map(m => `
+        <div class="match" onclick="openMatch(${m.id})">
+          <div class="team"><img src="${m.home_flag}" onerror="this.style.visibility='hidden'"><b>${m.home}</b></div>
+          <div class="mid"><div class="t">${m.time}</div><div class="s">${m.status}</div></div>
+          <div class="team away"><img src="${m.away_flag}" onerror="this.style.visibility='hidden'"><b>${m.away}</b></div>
+        </div>`).join("")}
+    </div>`).join("");
+}
+
+function shiftDay(n){ state.date.setDate(state.date.getDate()+n);
+  document.getElementById("dateInput").value=fmtDate(state.date); loadMatches(); }
+function quickDay(n){ state.date=new Date(); state.date.setDate(state.date.getDate()+n);
+  document.getElementById("dateInput").value=fmtDate(state.date);
+  document.querySelectorAll(".chips .chip").forEach((c,i)=>c.classList.toggle("on",i-1===n)); loadMatches(); }
+function onDateChange(){ state.date=new Date(document.getElementById("dateInput").value); loadMatches(); }
+
+async function openMatch(id){
+  state.match = await api(`/api/match/${id}`);
+  state.premium = state.match.premium_user;
+  renderDetail();
+  document.getElementById("view-list").classList.add("hidden");
+  document.getElementById("view-detail").classList.remove("hidden");
+  window.scrollTo(0,0);
+}
+function showList(){
+  document.getElementById("view-detail").classList.add("hidden");
+  document.getElementById("view-list").classList.remove("hidden");
+}
+
+function stat(v,l,locked){
+  return `<div class="stat"><div class="v ${locked?'locked':''}">${v}</div><div class="l">Media de la liga: ${l}</div></div>`;
+}
+
+function renderDetail(){
+  const m = state.match, s = m.stats;
+  const formRow = arr => arr.map(x=>`<div class="b ${x}">${x}</div>`).join("");
+  const locked = !state.premium;
+  document.getElementById("detailContent").innerHTML = `
+    <div class="matchcard">
+      <h2>${m.home} vs ${m.away}</h2>
+      <div class="meta">🏳️ ${m.country} · ${m.league}<br>
+        Hora de inicio: ${m.time} ${m.stadium?'· '+m.stadium:''}</div>
+      <div class="subtabs">
+        <button class="subtab on">General</button>
+        <button class="subtab" onclick="needPremium()">Goles</button>
+        <button class="subtab" onclick="needPremium()">Tiros a puerta</button>
+        <button class="subtab" onclick="needPremium()">Córners</button>
+        <button class="subtab" onclick="needPremium()">Tarjetas</button>
+      </div>
+    </div>
+
+    <div class="vs">
+      <div class="teams">
+        <div><img src="${m.home_flag}"><b>${m.home}</b></div>
+        <div class="vstxt">VS</div>
+        <div><img src="${m.away_flag}"><b>${m.away}</b></div>
+      </div>
+      <div class="form">
+        <div class="row">${formRow(m.home_form)}</div>
+        <div class="row">${formRow(m.away_form)}</div>
+      </div>
+      <div class="note">Mostrando las estadísticas en casa de ${m.home} y las de visitante de ${m.away}.</div>
+    </div>
+
+    <div class="grid">
+      ${stat(`${s.over_25}% Más de 2,5`, s.over_25_league+'%', false)}
+      ${stat(`${s.over_15}% Más de 1,5`, s.over_15_league+'%', false)}
+      ${stat(`${s.btts}% AEM`, s.btts_league+'%', locked)}
+      ${stat(`${s.goals_avg} Goles / Partido`, s.goals_avg_league, locked)}
+      ${stat(`${s.cards_avg} Tarjetas`, s.cards_avg_league, locked)}
+      ${stat(`${s.corners_avg} Córners`, s.corners_avg_league, locked)}
+    </div>
+
+    ${locked ? `<button class="cta dark" onclick="openPay()">COMPRAR SUSCRIPCIÓN</button>` : `
+    <div class="chatbox">
+      <h3>💬 Pregúntale al analista</h3>
+      <div class="msgs" id="msgs"></div>
+      <div class="chatin">
+        <input id="qInput" placeholder="¿Quién tiene más opciones?">
+        <button onclick="sendQ()">Enviar</button>
+      </div>
+    </div>`}
+  `;
+}
+
+function needPremium(){ if(!state.premium) openPay(); }
+
+async function sendQ(){
+  const inp = document.getElementById("qInput");
+  const q = inp.value.trim(); if(!q) return;
+  const msgs = document.getElementById("msgs");
+  msgs.innerHTML += `<div class="msg user">${q}</div>`;
+  inp.value=""; msgs.scrollTop = msgs.scrollHeight;
+  const loading = document.createElement("div");
+  loading.className="msg bot"; loading.textContent="Analizando…";
+  msgs.appendChild(loading); msgs.scrollTop=msgs.scrollHeight;
+  try{
+    const r = await api("/api/analysis",{method:"POST",
+      body:JSON.stringify({match_id:state.match.id, question:q})});
+    loading.textContent = r.analysis;
+  }catch(e){ loading.textContent="No se pudo generar el análisis."; }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function openPay(){ document.getElementById("payModal").classList.add("on"); }
+function closePay(){ document.getElementById("payModal").classList.remove("on"); }
+async function pay(plan){
+  try{
+    const r = await api("/api/pay",{method:"POST",body:JSON.stringify({plan})});
+    if (r.pay_url){ if(tg) tg.openLink(r.pay_url); else window.open(r.pay_url,"_blank"); }
+  }catch(e){ alert("No se pudo iniciar el pago."); }
+}
+
+init();
+</script>
+</body>
+</html>
