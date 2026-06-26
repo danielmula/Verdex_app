@@ -1,0 +1,43 @@
+# Configuracion de Render. Crea DOS servicios desde este repo:
+#   1) web    -> la API + Mini App (lo que abre Telegram)
+#   2) worker -> el bot que escucha mensajes
+#
+# Al desplegar, Render lee este archivo si usas "Blueprint".
+# Las variables marcadas como sync:false las pones tu a mano en el panel.
+
+services:
+  - type: web
+    name: botanalist-web
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: USE_MOCK
+        value: "true"            # cambia a "false" cuando tengas FootyStats
+      - key: CACHE_TTL
+        value: "600"
+      - key: FOOTYSTATS_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: "gpt-4o-mini"
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: KUNFUPAY_API_KEY
+        sync: false
+      - key: KUNFUPAY_BASE
+        sync: false
+
+  - type: worker
+    name: botanalist-bot
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: WEBAPP_URL
+        sync: false            # pon aqui la URL del servicio web cuando exista
